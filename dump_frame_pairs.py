@@ -29,6 +29,9 @@ class VideoOpenFailedException(Exception):
     pass
 
 
+class VideoTooShortException(Exception):
+    pass
+
 Frame = namedtuple('Frame', ['seconds', 'frame'])
 FramePair = namedtuple('FramePair', ['start', 'end'])
 
@@ -44,6 +47,9 @@ def sample_frame_pairs(video_path, num_pairs_per_video, pair_distance_seconds):
 
     # Sample frame pair indices.
     pair_distance_frames = int(pair_distance_seconds * frame_rate)
+    if num_frames <= pair_distance_frames:
+        raise VideoTooShortException("Video is less than {} frames.".format(
+            pair_distance_frames + 1))
     start_indices = random.sample(
         range(num_frames - pair_distance_frames), num_pairs_per_video)
     start_indices.sort()
@@ -95,7 +101,7 @@ def main():
             logging.info('Reading video {}'.format(video_path))
             frame_pairs = sample_frame_pairs(video_path, NUM_PAIRS_PER_VIDEO,
                                              PAIR_DISTANCE_SECONDS)
-        except VideoOpenFailedException as e:
+        except (VideoOpenFailedException, VideoTooShortException) as e:
             logging.error(e)
             continue
 
