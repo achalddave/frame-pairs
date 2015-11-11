@@ -2,12 +2,12 @@
 
 import argparse
 import json
+import collections
 import logging
 import random
 import sys
 import os
 
-import collections
 from collections import namedtuple
 
 import cv2
