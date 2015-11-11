@@ -1,7 +1,6 @@
 """Dump pairs of frames from videos."""
 
 import argparse
-import json
 import collections
 import logging
 import random
@@ -11,6 +10,8 @@ import os
 from collections import namedtuple
 
 import cv2
+# Default json does not support namedtuple_as_object argument.
+import simplejson as json
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('video_list',
@@ -170,8 +171,12 @@ def main():
                 DiskFrame(start_frame.seconds, start_image),
                 DiskFrame(end_frame.seconds, end_image), video_path)
             all_output_frame_pairs[video_basename].append(output_frame_pair)
-    with open('{}/output.json'.format(args.output)) as f:
-        json.dump(all_output_frame_pairs, f)
+    with open('{}/output.json'.format(args.output), 'wb') as f:
+        json.dump(all_output_frame_pairs,
+                  f,
+                  indent=4,
+                  separators=(',', ': '),
+                  namedtuple_as_object=True)
 
 
 if __name__ == '__main__':
