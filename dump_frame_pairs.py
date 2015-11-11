@@ -1,11 +1,13 @@
 """Dump pairs of frames from videos."""
 
 import argparse
+import json
 import logging
 import random
 import sys
 import os
 
+import collections
 from collections import namedtuple
 
 import cv2
@@ -35,6 +37,10 @@ class VideoTooShortException(Exception):
 Frame = namedtuple('Frame', ['seconds', 'frame'])
 FramePair = namedtuple('FramePair', ['start', 'end'])
 
+# Versions of the above namedtuples that contain information that needs to be
+# output to a file on disk for later consumption.
+DiskFrame = namedtuple('DiskFrame', ['seconds', 'image_path'])
+DiskFramePair = namedtuple('DiskFramePair', ['start', 'end', 'video_path'])
 
 def get_video_info(video_path):
     """Return fps and frame count for a video.
@@ -133,6 +139,8 @@ def main():
     else:
         os.mkdir(args.output)
 
+    # Store DiskFramePairs to output to disk.
+    all_output_frame_pairs = collections.defaultdict(list)
     for video_path in videos:
         try:
             logging.info('Reading video {}'.format(video_path))
@@ -158,6 +166,12 @@ def main():
             end_image = '{}/end.png'.format(pair_output_dir)
             cv2.imwrite(start_image, start_frame.frame)
             cv2.imwrite(end_image, end_frame.frame)
+            output_frame_pair = DiskFramePair(
+                DiskFrame(start_frame.seconds, start_image),
+                DiskFrame(end_frame.seconds, end_image), video_path)
+            all_output_frame_pairs[video_basename].append(output_frame_pair)
+    with open('{}/output.json'.format(args.output)) as f:
+        json.dump(all_output_frame_pairs, f)
 
 
 if __name__ == '__main__':
