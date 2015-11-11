@@ -36,14 +36,60 @@ Frame = namedtuple('Frame', ['seconds', 'frame'])
 FramePair = namedtuple('FramePair', ['start', 'end'])
 
 
-def sample_frame_pairs(video_path, num_pairs_per_video, pair_distance_seconds):
+def get_video_info(video_path):
+    """Return fps and frame count for a video.
+
+    Theoretically, we can get this from
+        video.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT)
+    but the above does not return a reliable value for large videos.
+
+    Returns:
+        video_info (tuple(frame_rate, num_frames))
+    """
+    video = cv2.VideoCapture(video_path)
+    if not video.isOpened():
+        raise VideoOpenFailedException("Couldn't open video {}".format(
+            video_path))
+    frame_rate = video.get(cv2.cv.CV_CAP_PROP_FPS)
+    video = cv2.VideoCapture(video_path)
+    num_frames = 0
+    while video.isOpened():
+        return_value, frame = video.read()
+        if return_value != True:
+            break
+        num_frames += 1
+    video.release()
+
+    return (frame_rate, num_frames)
+
+def capture_frames(video_path, frames_to_capture):
+    """Capture specified frames from a video.
+
+    Params:
+        video_path (str): Path to a video.
+        frames_to_capture (set): Set of frame indices to capture.
+    """
+    frames_to_capture = set(frames_to_capture)
     video = cv2.VideoCapture(video_path)
     if not video.isOpened():
         raise VideoOpenFailedException("Couldn't open video {}".format(
             video_path))
 
-    frame_rate = video.get(cv2.cv.CV_CAP_PROP_FPS)
-    num_frames = int(video.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT))
+    current_frame_index = 0
+    captured_frames = dict()
+    while video.isOpened():
+        return_value, frame = video.read()
+        if return_value != True:
+            break
+        if current_frame_index in frames_to_capture:
+            captured_frames[current_frame_index] = frame
+        current_frame_index += 1
+    video.release()
+    return captured_frames
+
+
+def sample_frame_pairs(video_path, num_pairs_per_video, pair_distance_seconds):
+    frame_rate, num_frames = get_video_info(video_path)
 
     # Sample frame pair indices.
     pair_distance_frames = int(pair_distance_seconds * frame_rate)
@@ -56,17 +102,7 @@ def sample_frame_pairs(video_path, num_pairs_per_video, pair_distance_seconds):
     end_indices = [start + pair_distance_frames for start in start_indices]
 
     frames_to_capture = set(start_indices + end_indices)
-    captured_frames = dict() # Map frame indices to frames.
-
-    # Capture required frames.
-    current_frame_index = 0
-    while video.isOpened():
-        return_value, frame = video.read()
-        if return_value != True:
-            break
-        if current_frame_index in frames_to_capture:
-            captured_frames[current_frame_index] = frame
-        current_frame_index += 1
+    captured_frames = capture_frames(video_path, frames_to_capture)
 
     # Create FramePair objects.
     frame_pairs = []
@@ -79,6 +115,7 @@ def sample_frame_pairs(video_path, num_pairs_per_video, pair_distance_seconds):
         end_frame = Frame(seconds=end_seconds,
                           frame=captured_frames[end_index])
         frame_pairs.append(FramePair(start_frame, end_frame))
+
     return frame_pairs
 
 
