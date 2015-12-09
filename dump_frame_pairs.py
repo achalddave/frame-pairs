@@ -168,8 +168,11 @@ def main():
             cv2.imwrite(start_image, start_frame.frame)
             cv2.imwrite(end_image, end_frame.frame)
             output_frame_pair = DiskFramePair(
-                DiskFrame(start_frame.seconds, start_image),
-                DiskFrame(end_frame.seconds, end_image), video_path)
+                DiskFrame(start_frame.seconds, os.path.relpath(start_image,
+                                                               args.output)),
+                DiskFrame(end_frame.seconds, os.path.relpath(end_image,
+                                                             args.output)),
+                video_path)
             all_output_frame_pairs[video_basename].append(output_frame_pair)
     with open('{}/output.json'.format(args.output), 'wb') as f:
         json.dump(all_output_frame_pairs,
