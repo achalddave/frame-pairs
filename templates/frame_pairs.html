@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+  </head>
+  <body>
+  {% for video_name, video_pairs in video_frame_pairs.items() %}
+  {% for frame_pair in video_pairs %}
+    <div class="frame_pair">
+      <table>
+        <tr>
+          <td><img src="{{ frame_pair.start.image_path }}" /></td>
+          <td><img src="{{ frame_pair.end.image_path }}" /></td>
+        </tr>
+        <tr>
+          <td>{{ frame_pair.start.seconds }}</td>
+          <td>{{ frame_pair.end.seconds }}</td>
+        </tr>
+    </div>
+  {% endfor %}
+  {% endfor %}
+  </body>
+</html>
